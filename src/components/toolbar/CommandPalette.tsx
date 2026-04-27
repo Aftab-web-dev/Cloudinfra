@@ -121,7 +121,8 @@ export function CommandPalette({
         icon: <Icon size={16} style={{ color: c.color }} />,
         category: 'component',
         action: () => {
-          const isGroup = c.category === 'Infrastructure Groups';
+          const isGroup =
+            c.category === 'Infrastructure Groups' || c.category === 'Network & Layers';
           const newNode = isGroup
             ? {
                 id: `${c.type}-${Date.now()}`,

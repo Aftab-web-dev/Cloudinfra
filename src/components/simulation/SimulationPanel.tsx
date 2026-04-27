@@ -15,6 +15,7 @@ import {
 import { useState } from 'react';
 import { useSimulationStore } from '../../store/simulationStore';
 import { useCanvasStore } from '../../store/canvasStore';
+import { FailureCascade } from './FailureCascade';
 
 function formatTime(ts: number): string {
   return new Date(ts).toLocaleTimeString('en-US', {
@@ -263,39 +264,42 @@ export function SimulationPanel() {
             </div>
           </div>
 
-          {/* Stats Summary */}
-          <div className="w-44 border-l border-gray-200 dark:border-gray-800 p-3 space-y-3">
-            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Stats</div>
-            <div className="space-y-2">
-              <div>
-                <div className="text-[10px] text-gray-400">Total Requests</div>
-                <div className="text-lg font-bold text-gray-800 dark:text-gray-100">{Math.round(totalRequests / Math.max(nodes.filter(n => n.type === 'cloudNode').length, 1))}</div>
-              </div>
-              <div>
-                <div className="text-[10px] text-gray-400">Avg Latency</div>
-                <div className="text-lg font-bold text-gray-800 dark:text-gray-100">{avgLatency}ms</div>
-              </div>
-              <div>
-                <div className="text-[10px] text-gray-400">Success Rate</div>
-                <div className={`text-lg font-bold ${
-                  requestLogs.length === 0 ? 'text-gray-400' :
-                  failedLogs.length === 0 ? 'text-green-500' :
-                  failedLogs.length / requestLogs.length > 0.5 ? 'text-red-500' : 'text-amber-500'
-                }`}>
-                  {requestLogs.length === 0
-                    ? '—'
-                    : `${Math.round(((requestLogs.length - failedLogs.length) / requestLogs.length) * 100)}%`}
+          {/* Stats + Failure Analysis */}
+          <div className="w-64 border-l border-gray-200 dark:border-gray-800 overflow-y-auto">
+            <div className="p-3 space-y-3">
+              <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Stats</div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-2">
+                  <div className="text-[9px] text-gray-400">Requests</div>
+                  <div className="text-base font-bold text-gray-800 dark:text-gray-100">{Math.round(totalRequests / Math.max(nodes.filter(n => n.type === 'cloudNode').length, 1))}</div>
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-2">
+                  <div className="text-[9px] text-gray-400">Avg Latency</div>
+                  <div className="text-base font-bold text-gray-800 dark:text-gray-100">{avgLatency}ms</div>
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-2">
+                  <div className="text-[9px] text-gray-400">Success Rate</div>
+                  <div className={`text-base font-bold ${
+                    requestLogs.length === 0 ? 'text-gray-400' :
+                    failedLogs.length === 0 ? 'text-green-500' :
+                    failedLogs.length / requestLogs.length > 0.5 ? 'text-red-500' : 'text-amber-500'
+                  }`}>
+                    {requestLogs.length === 0
+                      ? '—'
+                      : `${Math.round(((requestLogs.length - failedLogs.length) / requestLogs.length) * 100)}%`}
+                  </div>
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-2">
+                  <div className="text-[9px] text-gray-400">Issues</div>
+                  <div className="text-sm font-bold">
+                    <span className="text-amber-500">{degradedNodes.length}</span>
+                    <span className="text-gray-300 mx-0.5">/</span>
+                    <span className="text-red-500">{downNodes.length}</span>
+                  </div>
                 </div>
               </div>
-              <div>
-                <div className="text-[10px] text-gray-400">Degraded</div>
-                <div className="text-sm font-bold text-amber-500">{degradedNodes.length} nodes</div>
-              </div>
-              <div>
-                <div className="text-[10px] text-gray-400">Down</div>
-                <div className="text-sm font-bold text-red-500">{downNodes.length} nodes</div>
-              </div>
             </div>
+            <FailureCascade />
           </div>
         </div>
       )}

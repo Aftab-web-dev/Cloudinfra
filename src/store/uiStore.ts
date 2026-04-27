@@ -4,6 +4,7 @@ import type { CloudProvider } from '../types';
 interface UIState {
   sidebarOpen: boolean;
   propertiesOpen: boolean;
+  insightsOpen: boolean;
   activeProvider: CloudProvider;
   searchQuery: string;
   theme: 'light' | 'dark';
@@ -14,6 +15,7 @@ interface UIState {
 
   toggleSidebar: () => void;
   toggleProperties: () => void;
+  toggleInsights: () => void;
   setActiveProvider: (provider: CloudProvider) => void;
   setSearchQuery: (query: string) => void;
   toggleTheme: () => void;
@@ -25,6 +27,7 @@ interface UIState {
 export const useUIStore = create<UIState>((set) => ({
   sidebarOpen: true,
   propertiesOpen: true,
+  insightsOpen: true,
   activeProvider: 'aws',
   searchQuery: '',
   theme: (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches)
@@ -37,6 +40,7 @@ export const useUIStore = create<UIState>((set) => ({
 
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
   toggleProperties: () => set((s) => ({ propertiesOpen: !s.propertiesOpen })),
+  toggleInsights: () => set((s) => ({ insightsOpen: !s.insightsOpen })),
   setActiveProvider: (provider) => set({ activeProvider: provider }),
   setSearchQuery: (query) => set({ searchQuery: query }),
   toggleTheme: () =>

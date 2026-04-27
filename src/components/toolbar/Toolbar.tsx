@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import {
   Undo2,
   Redo2,
@@ -13,20 +14,42 @@ import {
   PanelRightClose,
   PanelRightOpen,
   FileJson,
+  FileCode2,
   Image,
+  FileImage,
   LayoutDashboard,
   Search,
   Zap,
   ZapOff,
+  Brain,
 } from 'lucide-react';
+import { getNodesBounds, getViewportForBounds } from '@xyflow/react';
+import { toPng, toSvg } from 'html-to-image';
 import { useCanvasStore } from '../../store/canvasStore';
 import { useUIStore } from '../../store/uiStore';
 import { useSimulationStore } from '../../store/simulationStore';
 import { autoLayoutHierarchical } from '../../utils/layout';
+import { MermaidImportModal } from './MermaidImportModal';
 import toast from 'react-hot-toast';
 
 export function Toolbar() {
+  const [mermaidOpen, setMermaidOpen] = useState(false);
   const { undo, redo, canUndo, canRedo, clear, nodes, edges, setNodes, pushHistory } = useCanvasStore();
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'v' || e.key === 'V')) {
+        const target = e.target as HTMLElement | null;
+        const tag = target?.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable) return;
+        e.preventDefault();
+        setMermaidOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
   const {
     theme,
     toggleTheme,
@@ -38,6 +61,8 @@ export function Toolbar() {
     toggleSidebar,
     propertiesOpen,
     toggleProperties,
+    insightsOpen,
+    toggleInsights,
   } = useUIStore();
 
   const handleExportJSON = () => {
@@ -78,12 +103,63 @@ export function Toolbar() {
     input.click();
   };
 
-  const handleExportPNG = () => {
-    const canvas = document.querySelector('.react-flow') as HTMLElement;
-    if (!canvas) return;
-    // Use html2canvas-like approach via SVG serialization
-    toast.success('PNG export — use browser screenshot for now');
+  const exportImage = async (format: 'png' | 'svg') => {
+    if (nodes.length === 0) {
+      toast.error('Canvas is empty');
+      return;
+    }
+    const viewportEl = document.querySelector('.react-flow__viewport') as HTMLElement | null;
+    if (!viewportEl) {
+      toast.error('Canvas not ready');
+      return;
+    }
+
+    const padding = 40;
+    const bounds = getNodesBounds(nodes);
+    const imageWidth = Math.min(4096, Math.max(800, Math.ceil(bounds.width + padding * 2)));
+    const imageHeight = Math.min(4096, Math.max(600, Math.ceil(bounds.height + padding * 2)));
+    const viewport = getViewportForBounds(bounds, imageWidth, imageHeight, 0.5, 2, 0.1);
+
+    const bg = theme === 'dark' ? '#0a0a0f' : '#f9fafb';
+    const filterNode = (node: HTMLElement) => {
+      const cls = node.classList;
+      if (!cls) return true;
+      // Drop UI chrome that shouldn't appear in the exported image
+      return !(
+        cls.contains('react-flow__minimap') ||
+        cls.contains('react-flow__controls') ||
+        cls.contains('react-flow__panel')
+      );
+    };
+    const opts = {
+      backgroundColor: bg,
+      width: imageWidth,
+      height: imageHeight,
+      filter: filterNode,
+      style: {
+        width: `${imageWidth}px`,
+        height: `${imageHeight}px`,
+        transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`,
+      },
+      pixelRatio: 2,
+    };
+
+    const toastId = toast.loading(`Exporting ${format.toUpperCase()}…`);
+    try {
+      const dataUrl = format === 'png' ? await toPng(viewportEl, opts) : await toSvg(viewportEl, opts);
+      const link = document.createElement('a');
+      link.download = `cloudinfra-diagram-${Date.now()}.${format}`;
+      link.href = dataUrl;
+      link.click();
+      toast.success(`${format.toUpperCase()} downloaded`, { id: toastId });
+    } catch (err) {
+      console.error(err);
+      toast.error('Export failed — check console', { id: toastId });
+    }
   };
+
+  const handleExportPNG = () => exportImage('png');
+  const handleExportSVG = () => exportImage('svg');
 
   const handleSave = () => {
     const data = JSON.stringify({ nodes, edges, savedAt: new Date().toISOString() });
@@ -164,8 +240,18 @@ export function Toolbar() {
       <button onClick={handleImportJSON} className={btnClass} title="Import JSON">
         <Upload size={18} />
       </button>
+      <button
+        onClick={() => setMermaidOpen(true)}
+        className={btnClass}
+        title="Import Mermaid (Ctrl+Shift+V)"
+      >
+        <FileCode2 size={18} />
+      </button>
       <button onClick={handleExportPNG} className={btnClass} title="Export as PNG">
         <Image size={18} />
+      </button>
+      <button onClick={handleExportSVG} className={btnClass} title="Export as SVG">
+        <FileImage size={18} />
       </button>
 
       {/* Spacer */}
@@ -206,10 +292,17 @@ export function Toolbar() {
         {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
       </button>
 
+      {/* Insights toggle */}
+      <button onClick={toggleInsights} className={insightsOpen ? activeBtnClass : btnClass} title="Toggle architecture insights">
+        <Brain size={18} />
+      </button>
+
       {/* Properties toggle */}
       <button onClick={toggleProperties} className={btnClass} title="Toggle properties panel">
         {propertiesOpen ? <PanelRightClose size={18} /> : <PanelRightOpen size={18} />}
       </button>
+
+      <MermaidImportModal open={mermaidOpen} onClose={() => setMermaidOpen(false)} />
     </div>
   );
 }

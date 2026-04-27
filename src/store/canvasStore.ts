@@ -9,6 +9,7 @@ import {
 } from '@xyflow/react';
 import type { CanvasNode, CanvasEdge } from '../types';
 import { getSmartLabel } from '../utils/smartLabels';
+import { getEdgeStyle } from '../utils/edgeStyle';
 
 interface HistoryEntry {
   nodes: CanvasNode[];
@@ -38,6 +39,7 @@ interface CanvasState {
   setNodes: (nodes: CanvasNode[]) => void;
   setEdges: (edges: CanvasEdge[]) => void;
   loadDiagram: (nodes: CanvasNode[], edges: CanvasEdge[]) => void;
+  importNodes: (nodes: CanvasNode[], edges: CanvasEdge[]) => void;
   clear: () => void;
 
   // Clipboard
@@ -79,6 +81,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     const sourceNode = nodes.find((n) => n.id === connection.source);
     const targetNode = nodes.find((n) => n.id === connection.target);
     const smartLabel = sourceNode && targetNode ? getSmartLabel(sourceNode, targetNode) : undefined;
+    const styleProps = getEdgeStyle(smartLabel);
 
     const newEdge: CanvasEdge = {
       ...connection,
@@ -86,8 +89,8 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       type: 'smoothstep',
       animated: true,
       label: smartLabel,
-      style: { stroke: '#6366f1', strokeWidth: 2 },
       data: { protocol: smartLabel || '', description: '' },
+      ...styleProps,
     };
     set((state) => ({
       edges: addEdge(newEdge, state.edges) as CanvasEdge[],
@@ -151,6 +154,14 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       history: [{ nodes, edges }],
       historyIndex: 0,
     });
+  },
+
+  importNodes: (newNodes, newEdges) => {
+    set((state) => ({
+      nodes: [...state.nodes, ...newNodes],
+      edges: [...state.edges, ...newEdges],
+    }));
+    get().pushHistory();
   },
 
   clipboard: null,

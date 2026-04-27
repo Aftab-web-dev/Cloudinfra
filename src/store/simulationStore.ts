@@ -47,6 +47,8 @@ const LATENCY_MAP: Record<string, [number, number]> = {
   'External': [30, 200],
   'DevOps': [5, 20],
   'Infrastructure Groups': [0, 0],
+  'Network & Layers': [0, 0],
+  'Infrastructure as Code': [0, 0],
 };
 
 function estimateLatency(category: string): number {

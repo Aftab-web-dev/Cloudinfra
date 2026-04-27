@@ -5,6 +5,7 @@ import {
   BackgroundVariant,
   MiniMap,
   Controls,
+  MarkerType,
   type Connection,
   type NodeTypes,
 } from '@xyflow/react';
@@ -15,6 +16,7 @@ import { CloudNode } from './CloudNode';
 import { GroupNode } from './GroupNode';
 import { TrafficAnimator } from './TrafficAnimator';
 import type { CloudComponent, CanvasNode } from '../../types';
+import { getEdgeStyle } from '../../utils/edgeStyle';
 
 const nodeTypes: NodeTypes = {
   cloudNode: CloudNode,
@@ -50,7 +52,9 @@ export function Canvas() {
       const bounds = reactFlowWrapper.current?.getBoundingClientRect();
       if (!bounds) return;
 
-      const isGroup = component.category === 'Infrastructure Groups';
+      const isGroup =
+        component.category === 'Infrastructure Groups' ||
+        component.category === 'Network & Layers';
 
       const position = {
         x: event.clientX - bounds.left - (isGroup ? 150 : 70),
@@ -118,16 +122,36 @@ export function Canvas() {
     () => ({
       type: 'smoothstep',
       animated: true,
-      style: { stroke: '#6366f1', strokeWidth: 2 },
+      markerStart: { type: MarkerType.ArrowClosed, color: '#6366f1', width: 16, height: 16 },
+      markerEnd: { type: MarkerType.ArrowClosed, color: '#6366f1', width: 16, height: 16 },
     }),
     []
+  );
+
+  // Always apply the latest edge styling (color by protocol + arrows on both ends)
+  // so existing edges from older diagrams pick up the new look.
+  const styledEdges = useMemo(
+    () =>
+      edges.map((e) => {
+        const protocol =
+          (e.data as { protocol?: string } | undefined)?.protocol ||
+          (typeof e.label === 'string' ? e.label : undefined);
+        const styleProps = getEdgeStyle(protocol);
+        return {
+          ...e,
+          type: 'smoothstep' as const,
+          animated: true,
+          ...styleProps,
+        };
+      }),
+    [edges]
   );
 
   return (
     <div ref={reactFlowWrapper} className="flex-1 h-full" tabIndex={0}>
       <ReactFlow
         nodes={nodes}
-        edges={edges}
+        edges={styledEdges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={handleConnect}
