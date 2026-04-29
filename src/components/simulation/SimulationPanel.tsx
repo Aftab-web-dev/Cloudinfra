@@ -135,8 +135,17 @@ export function SimulationPanel() {
         <div className="flex border-t border-gray-200 dark:border-gray-800 h-52 overflow-hidden">
           {/* Node Health Panel */}
           <div className="w-64 border-r border-gray-200 dark:border-gray-800 overflow-y-auto p-2">
-            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-2 mb-1">
-              Node Health — click to toggle
+            <div className="px-2 mb-1.5">
+              <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                Node Health
+              </div>
+              <div className="text-[9px] text-gray-400 mt-0.5 leading-tight">
+                Click row to cycle: <span className="text-green-500">healthy</span> →{' '}
+                <span className="text-amber-500">degraded</span> →{' '}
+                <span className="text-red-500">down</span>.
+                <br />
+                On canvas: right-click to toggle, alt/shift-click to send a request from a node.
+              </div>
             </div>
             <div className="space-y-0.5">
               {nodes
@@ -146,16 +155,27 @@ export function SimulationPanel() {
                   const comp = data?.component as Record<string, string> | undefined;
                   const status = nodeStatuses[node.id];
                   const health = status?.health || 'healthy';
-                  const healthColor =
-                    health === 'healthy' ? 'bg-green-500' : health === 'degraded' ? 'bg-amber-500' : 'bg-red-500';
+                  const healthBg =
+                    health === 'healthy'
+                      ? 'bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30'
+                      : health === 'degraded'
+                      ? 'bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30'
+                      : 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30';
+                  const dotColor =
+                    health === 'healthy'
+                      ? 'bg-green-500'
+                      : health === 'degraded'
+                      ? 'bg-amber-500'
+                      : 'bg-red-500';
 
                   return (
                     <button
                       key={node.id}
                       onClick={() => toggleNodeHealth(node.id)}
-                      className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors text-left"
+                      title={`${health.toUpperCase()} — click to cycle`}
+                      className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg border transition-colors text-left ${healthBg} hover:brightness-95`}
                     >
-                      <div className={`w-2 h-2 rounded-full ${healthColor} flex-shrink-0`} />
+                      <div className={`w-2 h-2 rounded-full ${dotColor} flex-shrink-0 ${health === 'down' ? 'animate-pulse' : ''}`} />
                       <div className="min-w-0 flex-1">
                         <div className="text-[11px] font-medium text-gray-700 dark:text-gray-200 truncate">
                           {(data?.label as string) || comp?.name || 'Node'}

@@ -12,6 +12,7 @@ import {
 import '@xyflow/react/dist/style.css';
 import { useCanvasStore } from '../../store/canvasStore';
 import { useUIStore } from '../../store/uiStore';
+import { useSimulationStore } from '../../store/simulationStore';
 import { CloudNode } from './CloudNode';
 import { GroupNode } from './GroupNode';
 import { TextNode } from './TextNode';
@@ -40,6 +41,9 @@ export function Canvas() {
     selectEdge,
   } = useCanvasStore();
   const { showMinimap, snapToGrid, gridSize, theme } = useUIStore();
+  const simActive = useSimulationStore((s) => s.active);
+  const toggleNodeHealth = useSimulationStore((s) => s.toggleNodeHealth);
+  const sendRequestFrom = useSimulationStore((s) => s.sendRequest);
 
   const onDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -154,10 +158,36 @@ export function Canvas() {
   );
 
   const onNodeClick = useCallback(
-    (_: React.MouseEvent, node: CanvasNode) => {
+    (event: React.MouseEvent, node: CanvasNode) => {
+      // In simulation mode, alt/shift-click sends a request from this node
+      // and ctrl/meta-click toggles its health — without leaving the canvas.
+      if (simActive && node.type === 'cloudNode') {
+        if (event.altKey || event.shiftKey) {
+          event.preventDefault();
+          sendRequestFrom(node.id);
+          return;
+        }
+        if (event.ctrlKey || event.metaKey) {
+          event.preventDefault();
+          toggleNodeHealth(node.id);
+          return;
+        }
+      }
       selectNode(node.id);
     },
-    [selectNode]
+    [selectNode, simActive, sendRequestFrom, toggleNodeHealth]
+  );
+
+  const onNodeContextMenu = useCallback(
+    (event: React.MouseEvent, node: CanvasNode) => {
+      // Right-click during simulation cycles a node's health
+      // (healthy → degraded → down → healthy). Suppress browser menu.
+      if (simActive && node.type === 'cloudNode') {
+        event.preventDefault();
+        toggleNodeHealth(node.id);
+      }
+    },
+    [simActive, toggleNodeHealth]
   );
 
   const onEdgeClick = useCallback(
@@ -212,6 +242,7 @@ export function Canvas() {
         onDragOver={onDragOver}
         onDrop={onDrop}
         onNodeClick={onNodeClick}
+        onNodeContextMenu={onNodeContextMenu}
         onEdgeClick={onEdgeClick}
         onPaneClick={onPaneClick}
         nodeTypes={nodeTypes}
