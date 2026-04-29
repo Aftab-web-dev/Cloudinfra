@@ -17,6 +17,8 @@ import {
   FileCode2,
   Image,
   FileImage,
+  FileText,
+  Cog,
   LayoutDashboard,
   Search,
   Zap,
@@ -25,6 +27,8 @@ import {
 } from 'lucide-react';
 import { getNodesBounds, getViewportForBounds } from '@xyflow/react';
 import { toPng, toSvg } from 'html-to-image';
+import { jsPDF } from 'jspdf';
+import { generateTerraform } from '../../utils/terraformExport';
 import { useCanvasStore } from '../../store/canvasStore';
 import { useUIStore } from '../../store/uiStore';
 import { useSimulationStore } from '../../store/simulationStore';
@@ -103,7 +107,7 @@ export function Toolbar() {
     input.click();
   };
 
-  const exportImage = async (format: 'png' | 'svg') => {
+  const exportImage = async (format: 'png' | 'svg' | 'pdf') => {
     if (nodes.length === 0) {
       toast.error('Canvas is empty');
       return;
@@ -146,6 +150,16 @@ export function Toolbar() {
 
     const toastId = toast.loading(`Exporting ${format.toUpperCase()}…`);
     try {
+      if (format === 'pdf') {
+        const dataUrl = await toPng(viewportEl, opts);
+        const orientation: 'l' | 'p' = imageWidth >= imageHeight ? 'l' : 'p';
+        const pdf = new jsPDF({ orientation, unit: 'pt', format: [imageWidth, imageHeight] });
+        pdf.addImage(dataUrl, 'PNG', 0, 0, imageWidth, imageHeight);
+        pdf.save(`cloudinfra-diagram-${Date.now()}.pdf`);
+        toast.success('PDF downloaded', { id: toastId });
+        return;
+      }
+
       const dataUrl = format === 'png' ? await toPng(viewportEl, opts) : await toSvg(viewportEl, opts);
       const link = document.createElement('a');
       link.download = `cloudinfra-diagram-${Date.now()}.${format}`;
@@ -160,6 +174,28 @@ export function Toolbar() {
 
   const handleExportPNG = () => exportImage('png');
   const handleExportSVG = () => exportImage('svg');
+  const handleExportPDF = () => exportImage('pdf');
+
+  const handleExportTerraform = () => {
+    if (nodes.length === 0) {
+      toast.error('Canvas is empty');
+      return;
+    }
+    try {
+      const hcl = generateTerraform(nodes, edges);
+      const blob = new Blob([hcl], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `cloudinfra-${Date.now()}.tf`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('Terraform (.tf) downloaded');
+    } catch (err) {
+      console.error(err);
+      toast.error('Terraform export failed — check console');
+    }
+  };
 
   const handleSave = () => {
     const data = JSON.stringify({ nodes, edges, savedAt: new Date().toISOString() });
@@ -252,6 +288,12 @@ export function Toolbar() {
       </button>
       <button onClick={handleExportSVG} className={btnClass} title="Export as SVG">
         <FileImage size={18} />
+      </button>
+      <button onClick={handleExportPDF} className={btnClass} title="Export as PDF">
+        <FileText size={18} />
+      </button>
+      <button onClick={handleExportTerraform} className={btnClass} title="Export as Terraform (.tf)">
+        <Cog size={18} />
       </button>
 
       {/* Spacer */}
