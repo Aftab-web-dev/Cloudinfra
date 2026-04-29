@@ -31,9 +31,21 @@ export interface GroupNodeData {
   [key: string]: unknown;
 }
 
+export interface TextNodeData {
+  text: string;
+  fontSize: number;
+  fontWeight: number;
+  color: string;
+  align: 'left' | 'center' | 'right';
+  italic?: boolean;
+  background?: string;
+  [key: string]: unknown;
+}
+
 export type CloudNode = Node<CloudNodeData, 'cloudNode'>;
 export type GroupCanvasNode = Node<GroupNodeData, 'groupNode'>;
-export type CanvasNode = CloudNode | GroupCanvasNode;
+export type TextCanvasNode = Node<TextNodeData, 'textNode'>;
+export type CanvasNode = CloudNode | GroupCanvasNode | TextCanvasNode;
 
 export interface CanvasEdgeData {
   protocol?: string;

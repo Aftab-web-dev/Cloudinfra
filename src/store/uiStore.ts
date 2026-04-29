@@ -11,7 +11,7 @@ interface UIState {
   showMinimap: boolean;
   snapToGrid: boolean;
   gridSize: number;
-  activeTab: 'components' | 'templates';
+  activeTab: 'components' | 'templates' | 'layers' | 'text';
 
   toggleSidebar: () => void;
   toggleProperties: () => void;
@@ -21,7 +21,7 @@ interface UIState {
   toggleTheme: () => void;
   toggleMinimap: () => void;
   toggleSnapToGrid: () => void;
-  setActiveTab: (tab: 'components' | 'templates') => void;
+  setActiveTab: (tab: 'components' | 'templates' | 'layers' | 'text') => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({

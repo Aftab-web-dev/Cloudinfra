@@ -1,8 +1,9 @@
 import * as LucideIcons from 'lucide-react';
 import { useCanvasStore } from '../../store/canvasStore';
 import { useUIStore } from '../../store/uiStore';
-import type { CloudNodeData, GroupNodeData } from '../../types';
+import type { CloudNodeData, GroupNodeData, TextNodeData } from '../../types';
 import { getServiceSpec } from '../../data/serviceSpecs';
+import { textSizePresets, textColorPresets } from '../../data/texts';
 
 export function PropertiesPanel() {
   const { propertiesOpen } = useUIStore();
@@ -75,6 +76,164 @@ export function PropertiesPanel() {
   }
 
   const isGroup = selectedNode!.type === 'groupNode';
+  const isText = selectedNode!.type === 'textNode';
+
+  if (isText) {
+    const textData = selectedNode!.data as unknown as TextNodeData;
+    const updateText = (patch: Partial<TextNodeData>) =>
+      updateNodeData(selectedNode!.id, patch as Partial<CloudNodeData & GroupNodeData & TextNodeData>);
+
+    return (
+      <div className="w-80 border-l border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 flex flex-col overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800">
+          <div className="flex items-center gap-2">
+            <div className="p-2 rounded-xl shadow-sm bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20">
+              <LucideIcons.Type size={20} className="text-indigo-500" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200">Text Element</h3>
+              <p className="text-[10px] text-gray-400">Annotation</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div>
+            <label className="block text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Text</label>
+            <textarea
+              value={textData.text || ''}
+              onChange={(e) => updateText({ text: e.target.value })}
+              rows={3}
+              className="w-full px-3 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-700 dark:text-gray-200 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Size</label>
+            <div className="flex gap-1">
+              {textSizePresets.map((s) => (
+                <button
+                  key={s.name}
+                  onClick={() => updateText({ fontSize: s.size })}
+                  className={`flex-1 px-2 py-1 text-[10px] font-semibold rounded-md transition-colors ${
+                    Math.abs((textData.fontSize || 14) - s.size) < 2
+                      ? 'bg-indigo-500 text-white'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  {s.name}
+                </button>
+              ))}
+            </div>
+            <input
+              type="number"
+              min={8}
+              max={96}
+              value={textData.fontSize || 14}
+              onChange={(e) => updateText({ fontSize: Number(e.target.value) || 14 })}
+              className="mt-2 w-full px-2.5 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Color</label>
+            <div className="flex flex-wrap gap-1.5">
+              {textColorPresets.map((c) => (
+                <button
+                  key={c.value}
+                  onClick={() => updateText({ color: c.value })}
+                  className={`w-7 h-7 rounded-full border-2 transition-all ${textData.color === c.value ? 'scale-110 border-gray-700 dark:border-white' : 'border-transparent'}`}
+                  style={{ backgroundColor: c.value }}
+                  title={c.name}
+                />
+              ))}
+              <input
+                type="color"
+                value={textData.color || '#111827'}
+                onChange={(e) => updateText({ color: e.target.value })}
+                className="w-7 h-7 rounded-full border-2 border-gray-200 dark:border-gray-700 cursor-pointer"
+                title="Custom color"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Style</label>
+            <div className="flex gap-1">
+              <button
+                onClick={() => updateText({ fontWeight: (textData.fontWeight || 500) >= 700 ? 400 : 700 })}
+                className={`flex-1 px-2 py-1.5 text-xs font-bold rounded-md transition-colors ${
+                  (textData.fontWeight || 500) >= 700
+                    ? 'bg-indigo-500 text-white'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
+              >
+                B
+              </button>
+              <button
+                onClick={() => updateText({ italic: !textData.italic })}
+                className={`flex-1 px-2 py-1.5 text-xs italic rounded-md transition-colors ${
+                  textData.italic
+                    ? 'bg-indigo-500 text-white'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
+              >
+                I
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Align</label>
+            <div className="flex gap-1">
+              {(['left', 'center', 'right'] as const).map((a) => {
+                const I = a === 'left' ? LucideIcons.AlignLeft : a === 'center' ? LucideIcons.AlignCenter : LucideIcons.AlignRight;
+                return (
+                  <button
+                    key={a}
+                    onClick={() => updateText({ align: a })}
+                    className={`flex-1 px-2 py-1.5 rounded-md transition-colors flex items-center justify-center ${
+                      (textData.align || 'left') === a
+                        ? 'bg-indigo-500 text-white'
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <I size={14} />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Background</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={textData.background || '#ffffff'}
+                onChange={(e) => updateText({ background: e.target.value })}
+                className="w-9 h-9 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer"
+              />
+              <button
+                onClick={() => updateText({ background: undefined })}
+                className="flex-1 px-3 py-1.5 text-xs font-semibold text-gray-500 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                Transparent
+              </button>
+            </div>
+          </div>
+
+          <button
+            onClick={deleteSelected}
+            className="w-full px-3 py-2 text-xs font-semibold text-red-500 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 rounded-lg transition-colors"
+          >
+            Delete Text
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const nodeData = selectedNode!.data as unknown as (CloudNodeData & GroupNodeData);
   const iconName = nodeData.component?.icon || nodeData.icon || 'Box';
   const Icon = (LucideIcons as unknown as Record<string, LucideIcons.LucideIcon>)[iconName] || LucideIcons.Box;

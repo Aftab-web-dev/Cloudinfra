@@ -63,6 +63,9 @@ export const azureLibrary: ProviderLibrary = {
         { id: 'azure-eventhubs', type: 'azure-eventhubs', provider: 'azure', category: 'Messaging', name: 'Event Hubs', description: 'Big data streaming', icon: 'Activity', color: '#0078D4' },
         { id: 'azure-eventgrid', type: 'azure-eventgrid', provider: 'azure', category: 'Messaging', name: 'Event Grid', description: 'Event routing service', icon: 'Workflow', color: '#0078D4' },
         { id: 'azure-signalr', type: 'azure-signalr', provider: 'azure', category: 'Messaging', name: 'SignalR', description: 'Real-time messaging', icon: 'MessageSquare', color: '#0078D4' },
+        { id: 'azure-eventhubs-kafka', type: 'azure-eventhubs-kafka', provider: 'azure', category: 'Messaging', name: 'Event Hubs (Kafka)', description: 'Kafka-compatible event streaming', icon: 'Layers', color: '#0078D4' },
+        { id: 'azure-iot-hub', type: 'azure-iot-hub', provider: 'azure', category: 'Messaging', name: 'IoT Hub (MQTT)', description: 'MQTT-enabled IoT gateway', icon: 'Radio', color: '#0078D4' },
+        { id: 'azure-web-pubsub', type: 'azure-web-pubsub', provider: 'azure', category: 'Messaging', name: 'Web PubSub', description: 'WebSocket-based pub/sub', icon: 'Send', color: '#0078D4' },
       ],
     },
     {

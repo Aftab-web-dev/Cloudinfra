@@ -14,13 +14,17 @@ import { useCanvasStore } from '../../store/canvasStore';
 import { useUIStore } from '../../store/uiStore';
 import { CloudNode } from './CloudNode';
 import { GroupNode } from './GroupNode';
+import { TextNode } from './TextNode';
 import { TrafficAnimator } from './TrafficAnimator';
 import type { CloudComponent, CanvasNode } from '../../types';
+import type { ArchLayer } from '../../data/layers';
+import type { TextPreset } from '../../data/texts';
 import { getEdgeStyle } from '../../utils/edgeStyle';
 
 const nodeTypes: NodeTypes = {
   cloudNode: CloudNode,
   groupNode: GroupNode,
+  textNode: TextNode,
 };
 
 export function Canvas() {
@@ -45,13 +49,63 @@ export function Canvas() {
   const onDrop = useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
       event.preventDefault();
+      const bounds = reactFlowWrapper.current?.getBoundingClientRect();
+      if (!bounds) return;
+
+      const layerData = event.dataTransfer.getData('application/cloudinfra-layer');
+      if (layerData) {
+        const layer: ArchLayer = JSON.parse(layerData);
+        const position = {
+          x: event.clientX - bounds.left - 200,
+          y: event.clientY - bounds.top - 120,
+        };
+        const newNode: CanvasNode = {
+          id: `${layer.id}-${Date.now()}`,
+          type: 'groupNode',
+          position,
+          style: { width: 420, height: 260 },
+          data: {
+            label: layer.name,
+            color: layer.color,
+            icon: layer.icon,
+            provider: 'generic',
+            subtitle: layer.description,
+          },
+        };
+        addNode(newNode);
+        return;
+      }
+
+      const textData = event.dataTransfer.getData('application/cloudinfra-text');
+      if (textData) {
+        const preset: TextPreset = JSON.parse(textData);
+        const position = {
+          x: event.clientX - bounds.left - 80,
+          y: event.clientY - bounds.top - 16,
+        };
+        const newNode: CanvasNode = {
+          id: `text-${Date.now()}`,
+          type: 'textNode',
+          position,
+          style: { width: Math.max(160, preset.text.length * 8), height: Math.max(40, preset.fontSize * 1.6) },
+          data: {
+            text: preset.text,
+            fontSize: preset.fontSize,
+            fontWeight: preset.fontWeight,
+            color: preset.color,
+            align: 'left',
+            italic: preset.italic ?? false,
+            background: preset.background,
+          },
+        };
+        addNode(newNode);
+        return;
+      }
+
       const componentData = event.dataTransfer.getData('application/cloudinfra');
       if (!componentData) return;
 
       const component: CloudComponent = JSON.parse(componentData);
-      const bounds = reactFlowWrapper.current?.getBoundingClientRect();
-      if (!bounds) return;
-
       const isGroup =
         component.category === 'Infrastructure Groups' ||
         component.category === 'Network & Layers';

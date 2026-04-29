@@ -59,6 +59,9 @@ export const gcpLibrary: ProviderLibrary = {
         { id: 'gcp-pubsub', type: 'gcp-pubsub', provider: 'gcp', category: 'Messaging', name: 'Pub/Sub', description: 'Messaging & event ingestion', icon: 'MailOpen', color: '#4285F4' },
         { id: 'gcp-cloudtasks', type: 'gcp-cloudtasks', provider: 'gcp', category: 'Messaging', name: 'Cloud Tasks', description: 'Asynchronous task execution', icon: 'Workflow', color: '#4285F4' },
         { id: 'gcp-dataflow', type: 'gcp-dataflow', provider: 'gcp', category: 'Messaging', name: 'Dataflow', description: 'Stream & batch data processing', icon: 'Activity', color: '#4285F4' },
+        { id: 'gcp-managed-kafka', type: 'gcp-managed-kafka', provider: 'gcp', category: 'Messaging', name: 'Managed Kafka', description: 'Managed Apache Kafka service', icon: 'Layers', color: '#4285F4' },
+        { id: 'gcp-iot-core', type: 'gcp-iot-core', provider: 'gcp', category: 'Messaging', name: 'IoT MQTT Bridge', description: 'MQTT bridge for device telemetry', icon: 'Radio', color: '#4285F4' },
+        { id: 'gcp-eventarc', type: 'gcp-eventarc', provider: 'gcp', category: 'Messaging', name: 'Eventarc', description: 'Event routing & delivery', icon: 'Workflow', color: '#4285F4' },
       ],
     },
     {
