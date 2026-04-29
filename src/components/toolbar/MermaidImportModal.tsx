@@ -2,7 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { X, FileCode2, Sparkles, AlertCircle, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCanvasStore } from '../../store/canvasStore';
-import { previewMermaid, importMermaid } from '../../lib/mermaid/importer';
+import {
+  previewMermaid,
+  importMermaid,
+  type DirectionOption,
+} from '../../lib/mermaid/importer';
 
 const SAMPLE = `flowchart LR
     User((Users)) --> CDN[CloudFront CDN]
@@ -23,13 +27,14 @@ interface MermaidImportModalProps {
 
 export function MermaidImportModal({ open, onClose }: MermaidImportModalProps) {
   const [source, setSource] = useState('');
+  const [direction, setDirection] = useState<DirectionOption>('auto');
   const importNodes = useCanvasStore((s) => s.importNodes);
   const existingNodes = useCanvasStore((s) => s.nodes);
 
   const preview = useMemo(() => {
     if (!source.trim()) return null;
-    return previewMermaid(source);
-  }, [source]);
+    return previewMermaid(source, { direction });
+  }, [source, direction]);
 
   useEffect(() => {
     if (!open) return;
@@ -43,7 +48,7 @@ export function MermaidImportModal({ open, onClose }: MermaidImportModalProps) {
   if (!open) return null;
 
   const handleImport = () => {
-    const result = importMermaid(source);
+    const result = importMermaid(source, { direction });
     if (!result.ok) {
       toast.error(result.errors[0] ?? 'Failed to import');
       return;
@@ -125,6 +130,40 @@ export function MermaidImportModal({ open, onClose }: MermaidImportModalProps) {
             spellCheck={false}
             className="w-full h-56 px-3 py-2.5 text-xs font-mono rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
           />
+
+          {/* Layout direction */}
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-semibold text-gray-600 dark:text-gray-400">
+              Layout:
+            </span>
+            <div className="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-950 p-0.5">
+              {(
+                [
+                  { value: 'auto', label: 'Auto' },
+                  { value: 'LR', label: 'Horizontal' },
+                  { value: 'TB', label: 'Vertical' },
+                ] as { value: DirectionOption; label: string }[]
+              ).map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setDirection(opt.value)}
+                  className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-colors ${
+                    direction === opt.value
+                      ? 'bg-indigo-500 text-white shadow-sm'
+                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <span className="text-[10px] text-gray-400 dark:text-gray-500">
+              {direction === 'auto'
+                ? "follows the source's flowchart header"
+                : 'overrides the source direction'}
+            </span>
+          </div>
 
           {/* Preview / errors */}
           {preview && (

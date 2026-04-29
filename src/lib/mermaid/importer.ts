@@ -10,6 +10,13 @@ import { computeLayout, NODE_WIDTH, NODE_HEIGHT } from './layout';
 import { getEdgeStyle, EDGE_COLORS } from '../../utils/edgeStyle';
 import { MarkerType } from '@xyflow/react';
 
+export type DirectionOption = 'auto' | 'TB' | 'LR';
+
+export interface ImportOptions {
+  idPrefix?: string;
+  direction?: DirectionOption;
+}
+
 export interface ImportStats {
   totalNodes: number;
   totalEdges: number;
@@ -30,14 +37,17 @@ export interface ImportResult {
 const SUBGRAPH_PADDING = 30;
 const SUBGRAPH_HEADER = 40;
 
-export function previewMermaid(source: string): ImportResult {
-  return importMermaid(source, 'preview');
+export function previewMermaid(source: string, opts?: ImportOptions): ImportResult {
+  return importMermaid(source, { idPrefix: 'preview', ...opts });
 }
 
-export function importMermaid(source: string, idPrefix?: string): ImportResult {
-  const prefix = idPrefix ?? `mm-${Date.now()}`;
+export function importMermaid(source: string, opts?: ImportOptions): ImportResult {
+  const prefix = opts?.idPrefix ?? `mm-${Date.now()}`;
   const { ast, errors: parseErrors } = parseMermaid(source);
   const errors = parseErrors.map((e) => `Line ${e.line}: ${e.message}`);
+  if (ast && opts?.direction && opts.direction !== 'auto') {
+    ast.direction = opts.direction;
+  }
 
   const stats: ImportStats = {
     totalNodes: 0,

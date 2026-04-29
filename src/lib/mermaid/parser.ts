@@ -106,16 +106,16 @@ export function parseMermaid(source: string): ParseResult {
         let label: string;
         if (idQuotedMatch) {
           id = idQuotedMatch[1];
-          label = idQuotedMatch[2];
+          label = cleanLabel(idQuotedMatch[2]);
         } else if (idTitleMatch) {
           id = idTitleMatch[1];
-          label = idTitleMatch[2];
+          label = cleanLabel(idTitleMatch[2]);
         } else if (quotedOnlyMatch) {
           id = `__sg_${subgraphCounter++}`;
-          label = quotedOnlyMatch[1];
+          label = cleanLabel(quotedOnlyMatch[1]);
         } else {
           id = decl;
-          label = decl;
+          label = cleanLabel(decl);
         }
         const parentId = subgraphStack[subgraphStack.length - 1];
         ast.subgraphs.push({ id, label, parentId });
@@ -194,7 +194,7 @@ function parseNodeRef(text: string): NodeRef | null {
   for (const [re, shape] of patterns) {
     const m = t.match(re);
     if (m) {
-      return { id: m[1], label: stripQuotes(m[2]).trim(), shape };
+      return { id: m[1], label: cleanLabel(stripQuotes(m[2])), shape };
     }
   }
 
@@ -207,6 +207,23 @@ function parseNodeRef(text: string): NodeRef | null {
 
 function stripQuotes(s: string): string {
   return s.replace(/^"(.*)"$/, '$1').replace(/^'(.*)'$/, '$1');
+}
+
+// Mermaid allows <br/>, <br>, &quot;, &amp;, &nbsp; etc. inside labels.
+// CloudNode renders the label with `truncate` (single line), so collapse
+// breaks/whitespace into single spaces instead of newlines.
+export function cleanLabel(s: string): string {
+  return s
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&quot;/gi, '"')
+    .replace(/&apos;|&#39;/gi, "'")
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&amp;/gi, '&')
+    .replace(/\\n/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function ensureNode(
@@ -241,7 +258,7 @@ function parseEdgeToken(raw: string, source: string, target: string): MermaidEdg
   let label: string | undefined;
   const labelMatch = t.match(/\|([^|]+)\|/);
   if (labelMatch) {
-    label = labelMatch[1].trim();
+    label = cleanLabel(labelMatch[1]);
   }
   const arrowToken = t.replace(/\|[^|]+\|/, '').trim();
   let style: MermaidEdgeStyle = 'solid';
