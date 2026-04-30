@@ -24,11 +24,13 @@ import {
   Zap,
   ZapOff,
   Brain,
+  Presentation,
 } from 'lucide-react';
 import { getNodesBounds, getViewportForBounds } from '@xyflow/react';
 import { toPng, toSvg } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import { generateTerraform } from '../../utils/terraformExport';
+import { exportToPptx } from '../../utils/pptxExport';
 import { useCanvasStore } from '../../store/canvasStore';
 import { useUIStore } from '../../store/uiStore';
 import { useSimulationStore } from '../../store/simulationStore';
@@ -176,6 +178,79 @@ export function Toolbar() {
   const handleExportSVG = () => exportImage('svg');
   const handleExportPDF = () => exportImage('pdf');
 
+  const handleExportPPTX = async (mode: 'editable' | 'image') => {
+    if (nodes.length === 0) {
+      toast.error('Canvas is empty');
+      return;
+    }
+    const toastId = toast.loading(
+      mode === 'editable' ? 'Building editable PPTX…' : 'Capturing diagram for PPTX…',
+    );
+    try {
+      let imageDataUrl: string | undefined;
+      if (mode === 'image') {
+        const viewportEl = document.querySelector(
+          '.react-flow__viewport',
+        ) as HTMLElement | null;
+        if (!viewportEl) {
+          toast.error('Canvas not ready', { id: toastId });
+          return;
+        }
+        const padding = 40;
+        const bounds = getNodesBounds(nodes);
+        const imageWidth = Math.min(
+          4096,
+          Math.max(800, Math.ceil(bounds.width + padding * 2)),
+        );
+        const imageHeight = Math.min(
+          4096,
+          Math.max(600, Math.ceil(bounds.height + padding * 2)),
+        );
+        const viewport = getViewportForBounds(
+          bounds,
+          imageWidth,
+          imageHeight,
+          0.5,
+          2,
+          0.1,
+        );
+        const bg = theme === 'dark' ? '#0a0a0f' : '#f9fafb';
+        const filterNode = (node: HTMLElement) => {
+          const cls = node.classList;
+          if (!cls) return true;
+          return !(
+            cls.contains('react-flow__minimap') ||
+            cls.contains('react-flow__controls') ||
+            cls.contains('react-flow__panel')
+          );
+        };
+        imageDataUrl = await toPng(viewportEl, {
+          backgroundColor: bg,
+          width: imageWidth,
+          height: imageHeight,
+          filter: filterNode,
+          style: {
+            width: `${imageWidth}px`,
+            height: `${imageHeight}px`,
+            transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`,
+          },
+          pixelRatio: 2,
+        });
+      }
+      await exportToPptx({ nodes, edges, theme, mode, imageDataUrl });
+      toast.success(
+        mode === 'editable' ? 'Editable PPTX downloaded' : 'PPTX (image) downloaded',
+        { id: toastId },
+      );
+    } catch (err) {
+      console.error(err);
+      toast.error('PPTX export failed — check console', { id: toastId });
+    }
+  };
+
+  const handleExportPPTXEditable = () => handleExportPPTX('editable');
+  const handleExportPPTXImage = () => handleExportPPTX('image');
+
   const handleExportTerraform = () => {
     if (nodes.length === 0) {
       toast.error('Canvas is empty');
@@ -291,6 +366,20 @@ export function Toolbar() {
       </button>
       <button onClick={handleExportPDF} className={btnClass} title="Export as PDF">
         <FileText size={18} />
+      </button>
+      <button
+        onClick={handleExportPPTXEditable}
+        className={btnClass}
+        title="Export as PowerPoint (editable shapes)"
+      >
+        <Presentation size={18} />
+      </button>
+      <button
+        onClick={handleExportPPTXImage}
+        className={btnClass}
+        title="Export as PowerPoint (image)"
+      >
+        <Presentation size={18} strokeWidth={1.2} />
       </button>
       <button onClick={handleExportTerraform} className={btnClass} title="Export as Terraform (.tf)">
         <Cog size={18} />
